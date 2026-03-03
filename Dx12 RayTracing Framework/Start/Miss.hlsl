@@ -1,10 +1,8 @@
 #include "Common.hlsl"
 
-[shader("miss")] void Miss(inout HitInfo payload
-                           : SV_RayPayload) {
-    
+[shader("miss")] void Miss(inout HitInfo payload : SV_RayPayload) 
+{ 
     float3 rayDir = WorldRayOrigin();
     
-    payload.colorAndDistance = float4((0.0f), 0.0f, 0.0f, 0);
-    payload.colorAndDistance = float4((1.0f), 0.0f, 0.0f, 1);
-}
+    payload.colorAndDistance = float4((rayDir.g + 1.0f) * 0.5f, 0.0f, 0.0f, 1);
+} 
