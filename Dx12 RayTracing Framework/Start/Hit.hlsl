@@ -11,8 +11,9 @@ StructuredBuffer<int> indices : register(t1);
 [shader("closesthit")]void ClosestHit(inout HitInfo payload,
                                        Attributes attrib)
 {
-    float3 barycentrics =
-      float3(1.f - attrib.bary.x - attrib.bary.y, attrib.bary.x, attrib.bary.y);
+    float3 barycentrics = float3(1.f - attrib.bary.x - attrib.bary.y, attrib.bary.x, attrib.bary.y);
+    
+    //float3 P = A + attrib.bary.x + B * attrib.bary.y + C * attrib.bary.z;
 
     uint vertId = 3 * PrimitiveIndex();
     // vertId = the first index, vertId + 1 = the second, vertId + 2 = the third

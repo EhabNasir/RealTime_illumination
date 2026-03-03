@@ -78,6 +78,9 @@ RaytracingAccelerationStructure SceneBVH : register(t0);
       // Payload associated to the ray, which will be used to communicate
       // between the hit/miss shaders and the raygen
       payload);
+        
+        //payload.colorAndDistance.g = 0.5f;
     }
+    
   gOutput[launchIndex] = float4(payload.colorAndDistance.rgb, 1.f);
 }
