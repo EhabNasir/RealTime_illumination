@@ -247,6 +247,14 @@ void DXRSetup::LoadAssets()
 	pDrawableObject->initMesh(m_device);
 	m_app->m_drawableObjects.push_back(pDrawableObject);
 
+	pDrawableObject->update(0);
+
+	DrawableGameObject* objectCopy = pDrawableObject->createCopy();
+	objectCopy->setPosition(XMFLOAT3(0.7f, 0, 0));
+	m_app->m_drawableObjects.push_back(objectCopy);
+
+	objectCopy->update(0);
+
 	// Create synchronization objects and wait until assets have been uploaded to
 	// the GPU.
 	{
@@ -282,7 +290,10 @@ void DXRSetup::CreateAccelerationStructures()
 			{ {m_app->m_drawableObjects[0]->getIndexBuffer().Get(), m_app->m_drawableObjects[0]->getIndexCount()}});
 
 	// Just one instance for now
-	m_app->m_instances = { {bottomLevelBuffers.pResult, m_app->m_drawableObjects[0]->getTransform()} };
+	//m_app->m_instances = { {bottomLevelBuffers.pResult, m_app->m_drawableObjects[0]->getTransform()} };
+	m_app->m_instances.push_back(std::make_pair(bottomLevelBuffers.pResult, m_app->m_drawableObjects[0]->getTransform()));
+	m_app->m_instances.push_back(std::make_pair(bottomLevelBuffers.pResult, m_app->m_drawableObjects[1]->getTransform()));
+
 	CreateTopLevelAS(m_app->m_instances);
 
 	// Flush the command list and wait for it to finish
