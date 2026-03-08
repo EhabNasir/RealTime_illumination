@@ -248,7 +248,7 @@ void DXRSetup::LoadAssets()
 
 	//Creating triangle
 	DrawableGameObject* pDrawableObject = new DrawableGameObject();
-	pDrawableObject->initMesh(m_device);
+	pDrawableObject->initOBJMesh(m_device, "Meshes/torusKnot.obj");
 	m_app->m_drawableObjects.push_back(pDrawableObject);
 
 	pDrawableObject->update(0);
@@ -298,8 +298,11 @@ void DXRSetup::CreateAccelerationStructures()
 
 	// Build the bottom AS from the Triangle vertex buffer
 	AccelerationStructureBuffers bottomLevelBuffers =
-		CreateBottomLevelAS({ {m_app->m_drawableObjects[0]->getVertexBuffer().Get(), m_app->m_drawableObjects[0]->getVertexCount()} }, 
-			{ {m_app->m_drawableObjects[0]->getIndexBuffer().Get(), m_app->m_drawableObjects[0]->getIndexCount()}});
+		CreateBottomLevelAS(
+			{{m_app->m_drawableObjects[0]->getVertexBuffer().Get(), 
+			  m_app->m_drawableObjects[0]->getVertexCount()}}, 
+			{{m_app->m_drawableObjects[0]->getIndexBuffer().Get(), 
+			m_app->m_drawableObjects[0]->getIndexCount()}});
 
 	// Build the bottom AS from the Plane vertex buffer
 	AccelerationStructureBuffers bottomLevelPlaneBuffers =

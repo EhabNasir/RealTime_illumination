@@ -187,6 +187,10 @@ HRESULT DrawableGameObject::initPlaneMesh(ComPtr<ID3D12Device5> device)
 		m_indexBuffer->Unmap(0, nullptr);
 	}
 
+	m_MeshData.VertexBuffer = m_vertexBuffer;
+	m_MeshData.IndexBuffer = m_indexBuffer;
+	m_MeshData.VertexCount = m_vertexCount;
+	m_MeshData.IndexCount = m_indexCount;
 
 	return S_OK;
 }
@@ -300,6 +304,13 @@ HRESULT DrawableGameObject::initCubeMesh(ComPtr<ID3D12Device5> device)
 	return S_OK;
 }
 
+HRESULT DrawableGameObject::initOBJMesh(ComPtr<ID3D12Device5> device, char* szOBJName)
+{
+	m_MeshData = OBJLoader::Load(szOBJName, device.Get());
+	assert(m_MeshData.VertexBuffer);
+	return S_OK;
+}
+
 DrawableGameObject* DrawableGameObject::createCopy()
 {
 	DrawableGameObject* pobj = new DrawableGameObject();
@@ -316,11 +327,13 @@ void DrawableGameObject::update(float t)
 {
 	static float cummulativeTime = 0;
 	//cummulativeTime += t;
-
-	// Cube:  Rotate around origin
+	// Cube: Rotate around origin
 	XMMATRIX mSpin = XMMatrixRotationY(cummulativeTime);
-
+	XMMATRIX mScale = XMMatrixScaling(m_scale, m_scale, m_scale);
 	XMMATRIX mTranslate = XMMatrixTranslation(m_position.x, m_position.y, m_position.z);
-	XMMATRIX world = mTranslate * mSpin;
+
+	//Apply Transformations
+	XMMATRIX world = mTranslate * mSpin * mScale;
+
 	XMStoreFloat4x4(&m_World, world);
 }
