@@ -31,3 +31,25 @@ StructuredBuffer<int> indices : register(t1);
     payload.colorAndDistance = float4(basicColourOut, RayTCurrent());
 
 }
+
+[shader("closesthit")]void PlaneClosestHit(inout HitInfo payload, Attributes attrib)
+{
+    uint vertId = 3 * PrimitiveIndex();
+    // vertId = the first index, vertId + 1 = the second, vertId + 2 = the third
+    // e.g. BTriVertex[indices[vertId + 0]]
+    
+    STriVertex A = BTriVertex[indices[vertId + 0]];
+    STriVertex B = BTriVertex[indices[vertId + 1]];
+    STriVertex C = BTriVertex[indices[vertId + 2]];
+    
+    float3 barycentrics = float3(1.f - attrib.bary.x - attrib.bary.y, attrib.bary.x, attrib.bary.y);
+    
+    //float3 colourOut = A.color.rgb * barycentrics.x
+    //                 + B.color.rgb * barycentrics.y
+    //                 + C.color.rgb * barycentrics.z;
+    
+    float3 basicColourOut = float3(1, 0, 0);
+  
+    payload.colorAndDistance = float4(basicColourOut, RayTCurrent());
+
+}

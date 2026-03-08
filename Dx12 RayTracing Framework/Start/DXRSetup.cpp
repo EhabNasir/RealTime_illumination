@@ -15,6 +15,9 @@
 
 #include "DrawableGameObject.h"
 
+#define TRIANGLE_INDEX 2
+#define PLANE_INDEX 2
+
 
 DXRSetup::DXRSetup(DXRApp* app)
 {
@@ -243,17 +246,26 @@ void DXRSetup::LoadAssets()
 		nullptr, IID_PPV_ARGS(&context->m_commandList)));
 
 
+	//Creating triangle
 	DrawableGameObject* pDrawableObject = new DrawableGameObject();
 	pDrawableObject->initMesh(m_device);
 	m_app->m_drawableObjects.push_back(pDrawableObject);
 
 	pDrawableObject->update(0);
 
+	//Creating copy of triangle
 	DrawableGameObject* objectCopy = pDrawableObject->createCopy();
-	objectCopy->setPosition(XMFLOAT3(0.7f, 0, 0));
+	objectCopy->setPosition(XMFLOAT3(0.0f, 0.7f, 0));
 	m_app->m_drawableObjects.push_back(objectCopy);
 
 	objectCopy->update(0);
+
+	//Create Plane Object
+	DrawableGameObject* planeObject = new DrawableGameObject();
+	planeObject->initPlaneMesh(m_device);
+	m_app->m_drawableObjects.push_back(planeObject);
+
+	planeObject->update(0);
 
 	// Create synchronization objects and wait until assets have been uploaded to
 	// the GPU.
@@ -289,10 +301,16 @@ void DXRSetup::CreateAccelerationStructures()
 		CreateBottomLevelAS({ {m_app->m_drawableObjects[0]->getVertexBuffer().Get(), m_app->m_drawableObjects[0]->getVertexCount()} }, 
 			{ {m_app->m_drawableObjects[0]->getIndexBuffer().Get(), m_app->m_drawableObjects[0]->getIndexCount()}});
 
+	// Build the bottom AS from the Plane vertex buffer
+	AccelerationStructureBuffers bottomLevelPlaneBuffers =
+		CreateBottomLevelAS({ {m_app->m_drawableObjects[2]->getVertexBuffer().Get(), m_app->m_drawableObjects[2]->getVertexCount()} },
+			{ {m_app->m_drawableObjects[2]->getIndexBuffer().Get(), m_app->m_drawableObjects[2]->getIndexCount()} });
+
 	// Just one instance for now
 	//m_app->m_instances = { {bottomLevelBuffers.pResult, m_app->m_drawableObjects[0]->getTransform()} };
 	m_app->m_instances.push_back(std::make_pair(bottomLevelBuffers.pResult, m_app->m_drawableObjects[0]->getTransform()));
 	m_app->m_instances.push_back(std::make_pair(bottomLevelBuffers.pResult, m_app->m_drawableObjects[1]->getTransform()));
+	m_app->m_instances.push_back(std::make_pair(bottomLevelPlaneBuffers.pResult, m_app->m_drawableObjects[2]->getTransform()));
 
 	CreateTopLevelAS(m_app->m_instances);
 
@@ -383,7 +401,7 @@ void DXRSetup::CreateRaytracingPipeline()
 	// using the [shader("xxx")] syntax
 	pipeline.AddLibrary(context->m_rayGenLibrary.Get(), { L"RayGen" });
 	pipeline.AddLibrary(context->m_missLibrary.Get(), { L"Miss" });
-	pipeline.AddLibrary(context->m_hitLibrary.Get(), { L"ClosestHit" });
+	pipeline.AddLibrary(context->m_hitLibrary.Get(), { L"ClosestHit", L"PlaneClosestHit" });
 
 	// To be used, each DX12 shader needs a root signature defining which
 	// parameters and buffers will be accessed.
@@ -409,6 +427,7 @@ void DXRSetup::CreateRaytracingPipeline()
 	// Hit group for the triangles, with a shader simply interpolating vertex
 	// colors
 	pipeline.AddHitGroup(L"HitGroup", L"ClosestHit");
+	pipeline.AddHitGroup(L"PlaneHitGroup", L"PlaneClosestHit");
 
 	// The following section associates the root signature to each shader. Note
 	// that we can explicitly show that some shaders share the same root signature
@@ -418,6 +437,7 @@ void DXRSetup::CreateRaytracingPipeline()
 	pipeline.AddRootSignatureAssociation(context->m_rayGenSignature.Get(), { L"RayGen" });
 	pipeline.AddRootSignatureAssociation(context->m_missSignature.Get(), { L"Miss" });
 	pipeline.AddRootSignatureAssociation(context->m_hitSignature.Get(), { L"HitGroup" });
+	pipeline.AddRootSignatureAssociation(context->m_hitSignature.Get(), { L"PlaneHitGroup" });
 
 	// The payload size defines the maximum size of the data carried by the rays,
 	// ie. the the data
@@ -559,6 +579,12 @@ void DXRSetup::CreateShaderBindingTable()
 			(void*)(m_app->m_drawableObjects[0]->getIndexBuffer()->GetGPUVirtualAddress())
 		});
 
+	// Adding the plane hit shader
+	context->m_sbtHelper.AddHitGroup(L"PlaneHitGroup",
+		{ (void*)(m_app->m_drawableObjects[PLANE_INDEX]->getVertexBuffer()->GetGPUVirtualAddress()),
+			(void*)(m_app->m_drawableObjects[PLANE_INDEX]->getIndexBuffer()->GetGPUVirtualAddress())
+		});
+
 	// Compute the size of the SBT given the number of shaders and their
 	// parameters
 	uint32_t sbtSize = context->m_sbtHelper.ComputeSBTSize();
@@ -656,7 +682,7 @@ void DXRSetup::CreateTopLevelAS(
 	for (size_t i = 0; i < instances.size(); i++) {
 		context->m_topLevelASGenerator.AddInstance(instances[i].first.Get(),
 			instances[i].second, static_cast<UINT>(i),
-			static_cast<UINT>(0));
+			static_cast<UINT>(i == PLANE_INDEX? 1 : 0));
 	}
 
 	// As for the bottom-level AS, the building the AS requires some scratch space

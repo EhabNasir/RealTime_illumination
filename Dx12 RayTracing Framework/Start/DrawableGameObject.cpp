@@ -117,6 +117,189 @@ HRESULT DrawableGameObject::initMesh(ComPtr<ID3D12Device5> device)
 	return S_OK;
 }
 
+HRESULT DrawableGameObject::initPlaneMesh(ComPtr<ID3D12Device5> device)
+{
+	// Create the vertex buffer.
+	{
+		//  U     V
+		//(0, 0)(1, 0)
+		//(0, 1)(1, 1)
+
+		float diameter = 0.5f;
+// Define the geometry for a plane.
+		Vertex planeVertices[] = {
+			{{-diameter, diameter, 0.0f}, {0, 0, 1, 0}, {0.5f, 0} },
+			{{-diameter, -diameter, 0.0f}, {0, 0, 1, 0}, {1, 1} },
+			{{diameter, diameter, 0.0f}, {0, 0, 1, 0}, {0, 1}},
+			{{diameter, -diameter, 0.0f}, {0, 0, 1, 0}, {0, 1}}
+		};
+
+		m_vertexCount = 4;
+
+		const UINT vertexBufferSize = sizeof(planeVertices);
+
+		// Note: using upload heaps to transfer static data like vert buffers is not
+		// recommended. Every time the GPU needs it, the upload heap will be
+		// marshalled over. Please read up on Default Heap usage. An upload heap is
+		// used here for code simplicity and because there are very few verts to
+		// actually transfer.
+		ThrowIfFailed(device->CreateCommittedResource(
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), D3D12_HEAP_FLAG_NONE,
+			&CD3DX12_RESOURCE_DESC::Buffer(vertexBufferSize),
+			D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
+			IID_PPV_ARGS(&m_vertexBuffer)));
+
+		// Copy the triangle data to the vertex buffer.
+		UINT8* pVertexDataBegin;
+		CD3DX12_RANGE readRange(
+			0, 0); // We do not intend to read from this resource on the CPU.
+		ThrowIfFailed(m_vertexBuffer->Map(
+			0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
+		memcpy(pVertexDataBegin, planeVertices, sizeof(planeVertices));
+		m_vertexBuffer->Unmap(0, nullptr);
+	}
+
+
+	// create the index buffer
+	{
+		// indices.
+		UINT indices[] =
+		{
+			0,1,2,
+			2,1,3,
+		};
+
+		m_indexCount = sizeof(indices) / sizeof(UINT);
+
+		const UINT indexBufferSize = sizeof(indices);
+		CD3DX12_HEAP_PROPERTIES heapProperty = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+		CD3DX12_RESOURCE_DESC bufferResource = CD3DX12_RESOURCE_DESC::Buffer(indexBufferSize);
+		ThrowIfFailed(device->CreateCommittedResource(
+			&heapProperty, D3D12_HEAP_FLAG_NONE, &bufferResource, //
+			D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&m_indexBuffer)));
+
+		// Copy the triangle data to the index buffer.
+		CD3DX12_RANGE readRange(0, 0); // We do not intend to read from this resource on the CPU.
+
+		UINT8* pIndexDataBegin;
+		ThrowIfFailed(m_indexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pIndexDataBegin)));
+		memcpy(pIndexDataBegin, indices, indexBufferSize);
+		m_indexBuffer->Unmap(0, nullptr);
+	}
+
+
+	return S_OK;
+}
+
+HRESULT DrawableGameObject::initCubeMesh(ComPtr<ID3D12Device5> device)
+{
+	// Create the vertex buffer.
+	{
+		//  U     V
+		//(0, 0)(1, 0)
+		//(0, 1)(1, 1)
+
+		float diameter = 0.5f;
+		// Define the geometry for a plane.
+		Vertex cubeVertices[] = {
+			// Front face
+			{{-diameter,  diameter,  diameter}, {0, 0,  1, 0}, {0.0f, 0.0f}},
+			{{-diameter, -diameter,  diameter}, {0, 0,  1, 0}, {0.0f, 1.0f}},
+			{{ diameter,  diameter,  diameter}, {0, 0,  1, 0}, {1.0f, 0.0f}},
+			{{ diameter, -diameter,  diameter}, {0, 0,  1, 0}, {1.0f, 1.0f}},
+
+			// Back face
+			{{ diameter,  diameter, -diameter}, {0, 0, -1, 0}, {0.0f, 0.0f}},
+			{{ diameter, -diameter, -diameter}, {0, 0, -1, 0}, {0.0f, 1.0f}},
+			{{-diameter,  diameter, -diameter}, {0, 0, -1, 0}, {1.0f, 0.0f}},
+			{{-diameter, -diameter, -diameter}, {0, 0, -1, 0}, {1.0f, 1.0f}},
+
+			// Left face
+			{{-diameter,  diameter, -diameter}, {-1, 0, 0, 0}, {0.0f, 0.0f}},
+			{{-diameter, -diameter, -diameter}, {-1, 0, 0, 0}, {0.0f, 1.0f}},
+			{{-diameter,  diameter,  diameter}, {-1, 0, 0, 0}, {1.0f, 0.0f}},
+			{{-diameter, -diameter,  diameter}, {-1, 0, 0, 0}, {1.0f, 1.0f}},
+
+			// Right face
+			{{ diameter,  diameter,  diameter}, {1, 0, 0, 0}, {0.0f, 0.0f}},
+			{{ diameter, -diameter,  diameter}, {1, 0, 0, 0}, {0.0f, 1.0f}},
+			{{ diameter,  diameter, -diameter}, {1, 0, 0, 0}, {1.0f, 0.0f}},
+			{{ diameter, -diameter, -diameter}, {1, 0, 0, 0}, {1.0f, 1.0f}},
+
+			// Top face
+			{{-diameter,  diameter, -diameter}, {0, 1, 0, 0}, {0.0f, 0.0f}},
+			{{-diameter,  diameter,  diameter}, {0, 1, 0, 0}, {0.0f, 1.0f}},
+			{{ diameter,  diameter, -diameter}, {0, 1, 0, 0}, {1.0f, 0.0f}},
+			{{ diameter,  diameter,  diameter}, {0, 1, 0, 0}, {1.0f, 1.0f}},
+
+			// Bottom face
+			{{-diameter, -diameter,  diameter}, {0, -1, 0, 0}, {0.0f, 0.0f}},
+			{{-diameter, -diameter, -diameter}, {0, -1, 0, 0}, {0.0f, 1.0f}},
+			{{ diameter, -diameter,  diameter}, {0, -1, 0, 0}, {1.0f, 0.0f}},
+			{{ diameter, -diameter, -diameter}, {0, -1, 0, 0}, {1.0f, 1.0f}},
+		};
+
+		m_vertexCount = 24;
+
+		const UINT vertexBufferSize = sizeof(cubeVertices);
+
+		// Note: using upload heaps to transfer static data like vert buffers is not
+		// recommended. Every time the GPU needs it, the upload heap will be
+		// marshalled over. Please read up on Default Heap usage. An upload heap is
+		// used here for code simplicity and because there are very few verts to
+		// actually transfer.
+		ThrowIfFailed(device->CreateCommittedResource(
+			&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD), D3D12_HEAP_FLAG_NONE,
+			&CD3DX12_RESOURCE_DESC::Buffer(vertexBufferSize),
+			D3D12_RESOURCE_STATE_GENERIC_READ, nullptr,
+			IID_PPV_ARGS(&m_vertexBuffer)));
+
+		// Copy the triangle data to the vertex buffer.
+		UINT8* pVertexDataBegin;
+		CD3DX12_RANGE readRange(
+			0, 0); // We do not intend to read from this resource on the CPU.
+		ThrowIfFailed(m_vertexBuffer->Map(
+			0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
+		memcpy(pVertexDataBegin, cubeVertices, sizeof(cubeVertices));
+		m_vertexBuffer->Unmap(0, nullptr);
+	}
+
+
+	// create the index buffer
+	{
+		// indices.
+		UINT indices[] =
+		{
+			0,  1,  2,   2,  1,  3,   // front
+			4,  5,  6,   6,  5,  7,   // back
+			8,  9,  10,  10, 9,  11,  // left
+			12, 13, 14,  14, 13, 15,  // right
+			16, 17, 18,  18, 17, 19,  // top
+			20, 21, 22,  22, 21, 23,  // bottom
+		};
+
+		m_indexCount = sizeof(indices) / sizeof(UINT);
+
+		const UINT indexBufferSize = sizeof(indices);
+		CD3DX12_HEAP_PROPERTIES heapProperty = CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+		CD3DX12_RESOURCE_DESC bufferResource = CD3DX12_RESOURCE_DESC::Buffer(indexBufferSize);
+		ThrowIfFailed(device->CreateCommittedResource(
+			&heapProperty, D3D12_HEAP_FLAG_NONE, &bufferResource, //
+			D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&m_indexBuffer)));
+
+		// Copy the triangle data to the index buffer.
+		CD3DX12_RANGE readRange(0, 0); // We do not intend to read from this resource on the CPU.
+
+		UINT8* pIndexDataBegin;
+		ThrowIfFailed(m_indexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pIndexDataBegin)));
+		memcpy(pIndexDataBegin, indices, indexBufferSize);
+		m_indexBuffer->Unmap(0, nullptr);
+	}
+
+
+	return S_OK;
+}
+
 DrawableGameObject* DrawableGameObject::createCopy()
 {
 	DrawableGameObject* pobj = new DrawableGameObject();
