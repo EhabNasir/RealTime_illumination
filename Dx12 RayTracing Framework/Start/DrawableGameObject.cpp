@@ -326,7 +326,8 @@ void DrawableGameObject::setPosition(XMFLOAT3 position)
 void DrawableGameObject::update(float t)
 {
 	static float cummulativeTime = 0;
-	//cummulativeTime += t;
+	cummulativeTime += t;
+
 	// Cube: Rotate around origin
 	XMMATRIX mSpin = XMMatrixRotationY(cummulativeTime);
 	XMMATRIX mScale = XMMatrixScaling(m_scale, m_scale, m_scale);

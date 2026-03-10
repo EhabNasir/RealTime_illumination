@@ -5,6 +5,8 @@
 
 class DXRSetup
 {
+	friend class DXRRuntime;
+
 private:
 	static const UINT FrameCount = FRAME_COUNT;
 	DXRApp* m_app;
@@ -30,7 +32,7 @@ private:
 
 	/// Create the main acceleration structure that holds all instances of the scene
 	/// \param     instances : pair of BLAS and transform
-	void CreateTopLevelAS(const std::vector<std::pair<ComPtr<ID3D12Resource>, DirectX::XMMATRIX>>& instances);
+	void CreateTopLevelAS(const std::vector<std::pair<ComPtr<ID3D12Resource>, DirectX::XMMATRIX>>& instances, bool requiresUpdate);
 
 	/// Create the acceleration structure of an instance
 	///

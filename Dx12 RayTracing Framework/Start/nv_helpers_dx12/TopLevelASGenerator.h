@@ -131,6 +131,9 @@ public:
                                                /// if an iterative update is requested
   );
 
+
+  void RemoveAllInstances() { m_instances.clear(); }
+
 private:
   /// Helper struct storing the instance data
   struct Instance
@@ -157,5 +160,6 @@ private:
   UINT64 m_instanceDescsSizeInBytes;
   /// Size of the buffer containing the TLAS
   UINT64 m_resultSizeInBytes;
+
 };
 } // namespace nv_helpers_dx12

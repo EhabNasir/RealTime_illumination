@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "DXRRuntime.h"
 #include "DXRContext.h"
+#include "DXRSetup.h"
 #include "imgui.h"
 #include "imgui_impl_win32.h"
 #include "imgui_impl_dx12.h"
@@ -41,9 +42,12 @@ void DXRRuntime::Render()
 
 void DXRRuntime::Update()
 {
+	unsigned int i = 0;
 	for (DrawableGameObject* dgo : m_app->m_drawableObjects)
 	{
-		dgo->update(0);
+		dgo->update(0.02f);
+		m_app->m_instances[i].second = dgo->getTransform();
+		i++;
 	}
 }
 
@@ -137,6 +141,9 @@ void DXRRuntime::PopulateCommandList() {
 	desc.Width = m_app->GetWidth();
 	desc.Height = m_app->GetHeight();
 	desc.Depth = 1;
+
+	//CreateTLAS
+	m_app->m_DXSetup->CreateTopLevelAS(m_app->m_instances, true);
 
 	// Bind the raytracing pipeline
 	context->m_commandList->SetPipelineState1(context->m_rtStateObject.Get());
