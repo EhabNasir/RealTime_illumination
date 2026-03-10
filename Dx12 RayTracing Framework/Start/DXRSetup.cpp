@@ -509,6 +509,9 @@ void DXRSetup::CreateShaderResourceHeap()
 {
 	DXRContext* context = m_app->GetContext();
 
+	//Add Camera constant buffer to shader resource (Descriptor) heap
+	//CreateCameraBuffer();
+
 	// Create a SRV/UAV/CBV descriptor heap. We need 2 entries - 1 UAV for the
 	// raytracing output and 1 SRV for the TLAS
 	context->m_srvUavHeap = nv_helpers_dx12::CreateDescriptorHeap(
@@ -734,4 +737,29 @@ void DXRSetup::CreateTopLevelAS(
 		context->m_topLevelASBuffers.pScratch.Get(),
 		context->m_topLevelASBuffers.pResult.Get(),
 		context->m_topLevelASBuffers.pInstanceDesc.Get());
+}
+
+void DXRSetup::CreateCameraBuffer()
+{
+	DXRContext* context = m_app->GetContext();
+
+	XMFLOAT3 eye = XMFLOAT3(0, 0, 0);
+	XMFLOAT3 look = XMFLOAT3(0, 0, 0);
+	XMFLOAT3 up = XMFLOAT3(0, 0, 0);
+
+	context->m_pCamera = new Camera(eye, look, up);
+
+	XMMATRIX view;
+	XMMATRIX proj;
+
+	context->m_cameraBuffer = nv_helpers_dx12::CreateBuffer(
+		m_device.Get(), context->m_camerBufferSize,
+		D3D12_RESOURCE_FLAG_NONE,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nv_helpers_dx12::kUploadHeapProps);
+}
+
+void DXRSetup::UpdateCameraBuffer()
+{
+
 }

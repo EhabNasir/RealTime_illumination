@@ -5,6 +5,7 @@
 #include "nv_helpers_dx12/TopLevelASGenerator.h"
 #include "nv_helpers_dx12/ShaderBindingTableGenerator.h"
 #include "common.h"
+#include "Camera.h"
 
 class DXRContext
 {
@@ -26,6 +27,11 @@ class DXRContext
 	ComPtr<ID3D12DescriptorHeap> m_rtvHeap;
 	ComPtr<ID3D12GraphicsCommandList4> m_commandList;
 	UINT m_rtvDescriptorSize;
+
+	//Perspective Camera
+	Camera* m_pCamera;
+	ComPtr<ID3D12Resource> m_cameraBuffer;
+	uint32_t m_camerBufferSize = 0;
 
 	// Synchronization objects.
 	UINT m_frameIndex;

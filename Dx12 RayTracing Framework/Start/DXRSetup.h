@@ -49,13 +49,12 @@ private:
 
 	void CreateRaytracingPipeline();
 
-
-
-
 	void CreateRaytracingOutputBuffer();
 	void CreateShaderResourceHeap();
 
 	void CreateShaderBindingTable();
 
+	void CreateCameraBuffer();
+	void UpdateCameraBuffer();
 };
 
