@@ -743,14 +743,12 @@ void DXRSetup::CreateCameraBuffer()
 {
 	DXRContext* context = m_app->GetContext();
 
-	XMFLOAT3 eye = XMFLOAT3(0, 0, 0);
+	XMFLOAT3 eye = XMFLOAT3(0, 0, 2);
 	XMFLOAT3 look = XMFLOAT3(0, 0, 0);
-	XMFLOAT3 up = XMFLOAT3(0, 0, 0);
+	XMFLOAT3 up = XMFLOAT3(0, 1, 0);
 
 	context->m_pCamera = new Camera(eye, look, up);
 
-	XMMATRIX view;
-	XMMATRIX proj;
 
 	context->m_cameraBuffer = nv_helpers_dx12::CreateBuffer(
 		m_device.Get(), context->m_camerBufferSize,
@@ -761,5 +759,9 @@ void DXRSetup::CreateCameraBuffer()
 
 void DXRSetup::UpdateCameraBuffer()
 {
+	DXRContext* context = m_app->GetContext();
+
+	XMMATRIX view = context->m_pCamera->GetViewMatrix();
+	XMMATRIX proj;
 
 }

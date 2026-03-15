@@ -54,6 +54,8 @@ private:
 
 	void CreateShaderBindingTable();
 
+	uint32_t m_camerBufferSize = 2 * sizeof(XMMATRIX);
+
 	void CreateCameraBuffer();
 	void UpdateCameraBuffer();
 };
