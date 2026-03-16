@@ -141,9 +141,4 @@
       <UniqueIdentifier>{1d267285-86db-4fc9-a84f-49c809db0105}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
-  <ItemGroup>
-    <Object Include="Meshes\ball.obj" />
-    <Object Include="Meshes\donut.obj" />
-    <Object Include="Meshes\torusKnot.obj" />
-  </ItemGroup>
 </Project>

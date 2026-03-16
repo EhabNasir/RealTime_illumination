@@ -350,7 +350,10 @@ ComPtr<ID3D12RootSignature> DXRSetup::CreateRayGenSignature() {
 		  0 /*heap slot where the UAV is defined*/},
 		 {0 /*t0*/, 1, 0,
 		  D3D12_DESCRIPTOR_RANGE_TYPE_SRV /*Top-level acceleration structure*/,
-		  1} });
+		  1},
+		 {0 /*b0*/, 1, 0,
+		  D3D12_DESCRIPTOR_RANGE_TYPE_CBV /*Camera parameters*/,
+		2} });
 
 	return rsc.Generate(m_device.Get(), true);
 }
@@ -510,12 +513,12 @@ void DXRSetup::CreateShaderResourceHeap()
 	DXRContext* context = m_app->GetContext();
 
 	//Add Camera constant buffer to shader resource (Descriptor) heap
-	//CreateCameraBuffer();
+	CreateCameraBuffer();
 
 	// Create a SRV/UAV/CBV descriptor heap. We need 2 entries - 1 UAV for the
 	// raytracing output and 1 SRV for the TLAS
 	context->m_srvUavHeap = nv_helpers_dx12::CreateDescriptorHeap(
-		m_device.Get(), 2, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
+		m_device.Get(), 3, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
 
 	// Get a handle to the heap memory on the CPU side, to be able to write the
 	// descriptors directly
@@ -542,6 +545,15 @@ void DXRSetup::CreateShaderResourceHeap()
 		context->m_topLevelASBuffers.pResult->GetGPUVirtualAddress();
 	// Write the acceleration structure view in the heap
 	m_device->CreateShaderResourceView(nullptr, &srvDesc, srvHandle);
+
+	// Increment past the acceleration structure descriptor to slot 2
+	srvHandle.ptr += m_device->GetDescriptorHandleIncrementSize(
+		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+	D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc = {};
+	cbvDesc.BufferLocation = context->m_cameraBuffer->GetGPUVirtualAddress();
+	cbvDesc.SizeInBytes = context->m_cameraBufferSize;
+	m_device->CreateConstantBufferView(&cbvDesc, srvHandle);
 }
 
 //-----------------------------------------------------------------------------
@@ -744,14 +756,15 @@ void DXRSetup::CreateCameraBuffer()
 	DXRContext* context = m_app->GetContext();
 
 	XMFLOAT3 eye = XMFLOAT3(0, 0, 2);
-	XMFLOAT3 look = XMFLOAT3(0, 0, 0);
+	XMFLOAT3 look = XMFLOAT3(0, 0, -1);
 	XMFLOAT3 up = XMFLOAT3(0, 1, 0);
 
 	context->m_pCamera = new Camera(eye, look, up);
 
+	context->m_cameraBufferSize = 4 * sizeof(XMMATRIX);
 
 	context->m_cameraBuffer = nv_helpers_dx12::CreateBuffer(
-		m_device.Get(), context->m_camerBufferSize,
+		m_device.Get(), context->m_cameraBufferSize,
 		D3D12_RESOURCE_FLAG_NONE,
 		D3D12_RESOURCE_STATE_GENERIC_READ,
 		nv_helpers_dx12::kUploadHeapProps);
@@ -761,7 +774,23 @@ void DXRSetup::UpdateCameraBuffer()
 {
 	DXRContext* context = m_app->GetContext();
 
-	XMMATRIX view = context->m_pCamera->GetViewMatrix();
-	XMMATRIX proj;
+	if (context->m_pCamera)
+	{
+
+		XMMATRIX view = context->m_pCamera->GetViewMatrix();
+
+	std::vector<XMMATRIX> matrices(4);
+	float fovAngleY = 45.0f * XM_PI / 180.0f;
+	XMMATRIX perspective = XMMatrixPerspectiveFovLH(
+		fovAngleY, m_app->GetAspectRatio(), 0.1f, 1000.0f);
+
+	matrices[0] = XMMatrixInverse(nullptr, view);        // inverse view
+	matrices[1] = XMMatrixInverse(nullptr, perspective); // inverse projection
+
+	uint8_t* pData;
+	ThrowIfFailed(context->m_cameraBuffer->Map(0, nullptr, (void**)&pData));
+	memcpy(pData, matrices.data(), context->m_cameraBufferSize);
+	context->m_cameraBuffer->Unmap(0, nullptr);
+	}
 
 }

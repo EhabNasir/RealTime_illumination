@@ -51,8 +51,9 @@ public:
 	virtual void OnRender();
 	virtual void OnDestroy();
 	DXRContext* GetContext() { return m_DXRContext; }
-	
 
+	float GetAspectRatio() { return m_aspectRatio; }
+	
 private:
 	DXRContext* m_DXRContext;
 	DXRRuntime* m_DXRuntime;

@@ -29,9 +29,9 @@ class DXRContext
 	UINT m_rtvDescriptorSize;
 
 	//Perspective Camera
-	Camera* m_pCamera;
+	Camera* m_pCamera = nullptr;
 	ComPtr<ID3D12Resource> m_cameraBuffer;
-	uint32_t m_camerBufferSize = 0;
+	uint32_t m_cameraBufferSize = 0;
 
 	// Synchronization objects.
 	UINT m_frameIndex;

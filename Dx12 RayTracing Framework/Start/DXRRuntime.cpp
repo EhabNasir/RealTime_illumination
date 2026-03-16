@@ -42,6 +42,7 @@ void DXRRuntime::Render()
 
 void DXRRuntime::Update()
 {
+
 	unsigned int i = 0;
 	for (DrawableGameObject* dgo : m_app->m_drawableObjects)
 	{
@@ -49,6 +50,9 @@ void DXRRuntime::Update()
 		m_app->m_instances[i].second = dgo->getTransform();
 		i++;
 	}
+
+	m_app->m_DXSetup->UpdateCameraBuffer();
+
 }
 
 void DXRRuntime::OnKeyUp(UINT8 key)
