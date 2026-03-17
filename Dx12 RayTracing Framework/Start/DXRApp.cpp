@@ -77,16 +77,28 @@ void DXRApp::WaitForPreviousFrame() {
 	m_DXRContext->m_frameIndex = m_DXRContext->m_swapChain->GetCurrentBackBufferIndex();
 }
 
-
-
 //-----------------------------------------------------------------------------
 //
 void DXRApp::OnKeyUp(UINT8 key) {
 
 	m_DXRuntime->OnKeyUp(key);
-
 }
 
+void DXRApp::OnKeyDown(UINT8 key) {
 
+	m_DXRuntime->OnKeyUp(key);
+}
 
+void DXRApp::OnMouseMoveDelta(float deltaX, float deltaY)
+{
+	POINTS delta;
+	delta.x = deltaX;
+	delta.y = deltaY;
 
+	m_DXRContext->m_pCamera->UpdateLookAt(delta);
+}
+
+void DXRApp::OnMouseMove(float cursorPosX, float cursorPosY)
+{
+
+}

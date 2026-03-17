@@ -53,6 +53,12 @@ public:
 	DXRContext* GetContext() { return m_DXRContext; }
 
 	float GetAspectRatio() { return m_aspectRatio; }
+
+	void OnKeyDown(UINT8 /*key*/) override;
+	void OnKeyUp(UINT8 /*key*/) override;
+
+	void OnMouseMoveDelta(float deltaX, float deltaY);
+	void OnMouseMove(float cursorPosX, float cursorPosY);
 	
 private:
 	DXRContext* m_DXRContext;
@@ -60,7 +66,7 @@ private:
 	DXRSetup* m_DXSetup;
 
 	
-	virtual void OnKeyUp(UINT8 key);
+	//virtual void OnKeyUp(UINT8 key);
 	void WaitForPreviousFrame();
 
 	

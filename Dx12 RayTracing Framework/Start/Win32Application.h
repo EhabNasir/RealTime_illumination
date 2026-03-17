@@ -16,6 +16,7 @@
 
 class DXSample;
 
+
 class Win32Application
 {
 public:

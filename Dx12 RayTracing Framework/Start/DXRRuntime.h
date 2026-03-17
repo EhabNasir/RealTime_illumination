@@ -17,5 +17,6 @@ public:
 	void Render();
 	void Update();
 	void OnKeyUp(UINT8 key);
+	void OnKeyDown(UINT8 key);
 };
 

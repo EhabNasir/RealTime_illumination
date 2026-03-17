@@ -62,6 +62,13 @@ void DXRRuntime::OnKeyUp(UINT8 key)
 	}
 }
 
+void DXRRuntime::OnKeyDown(UINT8 key)
+{
+	// e.g.
+	if (key == VK_DOWN) {
+	}
+}
+
 void DXRRuntime::PopulateCommandList() {
 
 	DXRContext* context = m_app->GetContext();
