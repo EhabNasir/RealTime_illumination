@@ -54,7 +54,12 @@ private:
 
 	void CreateShaderBindingTable();
 
+	// Camera Setup Functions
 	void CreateCameraBuffer();
 	void UpdateCameraBuffer();
+
+	// Colour Setup Functions
+	void CreateColourBuffer();
+	void UpdateColourBuffer();
 };
 

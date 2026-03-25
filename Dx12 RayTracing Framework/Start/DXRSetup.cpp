@@ -56,6 +56,10 @@ void DXRSetup::initialise()
 	// such as the acceleration structure
 	CreateShaderResourceHeap(); // #DXR
 
+	//Create the Colour Buffer
+	CreateColourBuffer();
+	UpdateColourBuffer();
+
 	// Create the shader binding table and indicating which shaders
 	// are invoked for each instance in the  AS
 	CreateShaderBindingTable();
@@ -366,6 +370,10 @@ ComPtr<ID3D12RootSignature> DXRSetup::CreateHitSignature() {
 	nv_helpers_dx12::RootSignatureGenerator rsc;
 	rsc.AddRootParameter(D3D12_ROOT_PARAMETER_TYPE_SRV, 0 /*t0*/); // vertex data
 	rsc.AddRootParameter(D3D12_ROOT_PARAMETER_TYPE_SRV, 1 /*t1*/); // indices
+
+	// Add colour constant buffer
+	rsc.AddRootParameter(D3D12_ROOT_PARAMETER_TYPE_CBV, 0);  // b0 colour and lighting
+
 	return rsc.Generate(m_device.Get(), true);
 }
 
@@ -594,13 +602,15 @@ void DXRSetup::CreateShaderBindingTable()
 	// Adding the triangle hit shader
 	context->m_sbtHelper.AddHitGroup(L"HitGroup",
 		{ (void*)(m_app->m_drawableObjects[0]->getVertexBuffer()->GetGPUVirtualAddress()), 
-			(void*)(m_app->m_drawableObjects[0]->getIndexBuffer()->GetGPUVirtualAddress())
+			(void*)(m_app->m_drawableObjects[0]->getIndexBuffer()->GetGPUVirtualAddress()),
+			(void*)(m_app->GetContext()->m_colourBuffer->GetGPUVirtualAddress())
 		});
 
 	// Adding the plane hit shader
 	context->m_sbtHelper.AddHitGroup(L"PlaneHitGroup",
 		{ (void*)(m_app->m_drawableObjects[PLANE_INDEX]->getVertexBuffer()->GetGPUVirtualAddress()),
-			(void*)(m_app->m_drawableObjects[PLANE_INDEX]->getIndexBuffer()->GetGPUVirtualAddress())
+			(void*)(m_app->m_drawableObjects[PLANE_INDEX]->getIndexBuffer()->GetGPUVirtualAddress()),
+			(void*)(m_app->GetContext()->m_colourBuffer->GetGPUVirtualAddress())
 		});
 
 	// Compute the size of the SBT given the number of shaders and their
@@ -793,4 +803,40 @@ void DXRSetup::UpdateCameraBuffer()
 	context->m_cameraBuffer->Unmap(0, nullptr);
 	}
 
+}
+ 
+void DXRSetup::CreateColourBuffer()
+{
+	DXRContext* context = m_app->GetContext();
+
+	context->m_colourBufferSize = 256;
+
+	context->m_colourBuffer = nv_helpers_dx12::CreateBuffer(
+		m_device.Get(), context->m_colourBufferSize,
+		D3D12_RESOURCE_FLAG_NONE,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nv_helpers_dx12::kUploadHeapProps);
+}
+
+void DXRSetup::UpdateColourBuffer()
+{
+	DXRContext* context = m_app->GetContext();
+
+	XMFLOAT4 colourPlane = XMFLOAT4(1, 0, 0, 1);
+	XMFLOAT4 colourDonut = XMFLOAT4(0, 1, 0, 1);
+
+	// Store in a struct matching the HLSL cbuffer layout
+	struct ColourData
+	{
+		XMFLOAT4 colourPlane;
+		XMFLOAT4 colourDonut;
+	};
+
+	ColourData data = { colourPlane, colourDonut };
+
+	// Copy to GPU Buffer
+	uint8_t* pData;
+	ThrowIfFailed(context->m_colourBuffer->Map(0, nullptr, (void**)&pData));
+	memcpy(pData, &data, sizeof(ColourData));
+	context->m_colourBuffer->Unmap(0, nullptr);
 }

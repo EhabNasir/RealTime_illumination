@@ -9,6 +9,11 @@ struct STriVertex
 
 StructuredBuffer<STriVertex> BTriVertex : register(t0);
 StructuredBuffer<int> indices : register(t1);
+cbuffer ColourParams : register(b0)
+{
+    float4 colourPlane;
+    float4 colourDonut;
+}
 
 [shader("closesthit")]void ClosestHit(inout HitInfo payload, Attributes attrib)
 {
@@ -28,7 +33,7 @@ StructuredBuffer<int> indices : register(t1);
     
     float3 basicColourOut = float3(0, 1, 0);
   
-    payload.colorAndDistance = float4(basicColourOut, RayTCurrent());
+    payload.colorAndDistance = float4(colourDonut.rgb, RayTCurrent());
 
 }
 
@@ -50,6 +55,6 @@ StructuredBuffer<int> indices : register(t1);
     
     float3 basicColourOut = float3(1, 0, 0);
   
-    payload.colorAndDistance = float4(basicColourOut, RayTCurrent());
+    payload.colorAndDistance = float4(colourPlane.rgb, RayTCurrent());
 
 }

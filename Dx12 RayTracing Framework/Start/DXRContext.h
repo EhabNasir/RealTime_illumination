@@ -33,6 +33,10 @@ class DXRContext
 	ComPtr<ID3D12Resource> m_cameraBuffer;
 	uint32_t m_cameraBufferSize = 0;
 
+	// Colour/Lighting Buffer
+	ComPtr<ID3D12Resource> m_colourBuffer;
+	uint32_t m_colourBufferSize = 0;
+
 	// Synchronization objects.
 	UINT m_frameIndex;
 	HANDLE m_fenceEvent;
