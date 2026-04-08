@@ -1,6 +1,6 @@
 #include "Common.hlsl"
 
-[shader("miss")] void Miss(inout HitInfo payload : SV_RayPayload) 
+[shader("miss")] void Miss(inout HitInfo payload) 
 { 
     //float3 rayDir = WorldRayOrigin();
     
@@ -14,4 +14,10 @@
     float gradientValue = launchIndex.y / dims.y;
     
     payload.colorAndDistance = float4(0, 0, gradientValue, 1);
+}
+
+[shader("miss")]
+void ShadowMiss(inout ShadowHitInfo payload)
+{
+    payload.isHit = false;
 }

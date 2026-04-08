@@ -46,10 +46,12 @@ void DXRRuntime::Update()
 	unsigned int i = 0;
 	for (DrawableGameObject* dgo : m_app->m_drawableObjects)
 	{
-		dgo->update(0.02f);
+		//dgo->update(0.0f);
 		m_app->m_instances[i].second = dgo->getTransform();
 		i++;
 	}
+
+	m_app->m_drawableObjects[0]->update(0.02f);
 
 	m_app->m_DXSetup->UpdateCameraBuffer();
 

@@ -125,13 +125,13 @@ HRESULT DrawableGameObject::initPlaneMesh(ComPtr<ID3D12Device5> device)
 		//(0, 0)(1, 0)
 		//(0, 1)(1, 1)
 
-		float diameter = 0.5f;
+		float diameter = 6.0f;
 // Define the geometry for a plane.
 		Vertex planeVertices[] = {
-			{{-diameter, diameter, 0.0f}, {0, 0, 1, 0}, {0.5f, 0} },
-			{{-diameter, -diameter, 0.0f}, {0, 0, 1, 0}, {1, 1} },
-			{{diameter, diameter, 0.0f}, {0, 0, 1, 0}, {0, 1}},
-			{{diameter, -diameter, 0.0f}, {0, 0, 1, 0}, {0, 1}}
+			{{-diameter,  0.0f, -diameter}, {0, 1, 0, 0}, {0.0f, 0.0f}},
+			{{-diameter,  0.0f,  diameter}, {0, 1, 0, 0}, {0.0f, 1.0f}},
+			{{ diameter,  0.0f, -diameter}, {0, 1, 0, 0}, {1.0f, 0.0f}},
+			{{ diameter,  0.0f,  diameter}, {0, 1, 0, 0}, {1.0f, 1.0f}},
 		};
 
 		m_vertexCount = 4;
@@ -329,8 +329,8 @@ void DrawableGameObject::update(float t)
 	cummulativeTime += t;
 
 	// Cube: Rotate around origin
-	XMMATRIX mSpin = XMMatrixRotationY(cummulativeTime);
-	XMMATRIX mScale = XMMatrixScaling(m_scale, m_scale, m_scale);
+	XMMATRIX mSpin = XMMatrixRotationX(cummulativeTime);
+	XMMATRIX mScale = XMMatrixScaling(m_scale/4, m_scale/4, m_scale/4);
 	XMMATRIX mTranslate = XMMatrixTranslation(m_position.x, m_position.y, m_position.z);
 
 	//Apply Transformations

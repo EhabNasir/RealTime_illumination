@@ -9,11 +9,14 @@ struct STriVertex
 
 StructuredBuffer<STriVertex> BTriVertex : register(t0);
 StructuredBuffer<int> indices : register(t1);
+
 cbuffer ColourParams : register(b0)
 {
     float4 colourPlane;
     float4 colourDonut;
 }
+
+RaytracingAccelerationStructure SceneBVH : register(t2);
 
 float3 HitWorldPosition()
 {
@@ -136,6 +139,7 @@ float2 HitAttribute2(float2 vertexAttribute[3], Attributes attr)
         C.normal.xyz
     };
 
+    
     float3 triangleNormal = HitAttribute(vertexNormals, attrib);
     float3 worldNormal = normalize(mul(triangleNormal, (float3x3) ObjectToWorld4x3()));
     float3 worldPosition = HitWorldPosition();
@@ -148,8 +152,40 @@ float2 HitAttribute2(float2 vertexAttribute[3], Attributes attr)
     
     float3 colour = colourPlane.rgb * (diffuse + ambient);
     
-    float3 basicColourOut = float3(1, 0, 0);
+    float3 basicColourOut = float3(0, 1, 0);
+    
+    RayDesc shadowRay;
+    shadowRay.Origin = worldPosition;
+    shadowRay.Direction = normalize(lightPosition - worldPosition);
+    shadowRay.TMin = 0.001f;
+    shadowRay.TMax = length(lightPosition - worldPosition);
+
+    ShadowHitInfo shadowPayload;
+    shadowPayload.isHit = 0;
+
+    TraceRay(
+    SceneBVH,
+    RAY_FLAG_NONE, // instance mask
+    0xFF,
+    1, // hit group offset = 1 (ShadowHitGroup is 1 after PlaneHitGroup)
+    0, // geometry contribution multiplier
+    1, // miss shader index = 1 (ShadowMiss is second miss shader)
+    shadowRay,
+    shadowPayload
+);
+
+    if (shadowPayload.isHit == false)
+        colour *= 1.0f;
+    else
+        colour *= 0.2f;
+    
   
     payload.colorAndDistance = float4(colour, RayTCurrent());
 
+}
+
+[shader("closesthit")]
+void ShadowClosestHit(inout ShadowHitInfo payload, Attributes attrib)
+{
+    payload.isHit = true;
 }
