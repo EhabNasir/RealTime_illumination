@@ -154,7 +154,10 @@ void RootSignatureGenerator::AddRootParameter(D3D12_ROOT_PARAMETER_TYPE type,
 //--------------------------------------------------------------------------------------------------
 //
 // Create the root signature from the set of parameters, in the order of the addition calls
-ID3D12RootSignature* RootSignatureGenerator::Generate(ID3D12Device* device, bool isLocal)
+ID3D12RootSignature* RootSignatureGenerator::Generate(ID3D12Device* device, 
+    bool isLocal, 
+    UINT numStaticSamplers,
+    const D3D12_STATIC_SAMPLER_DESC* staticSamplers)
 {
   // Go through all the parameters, and set the actual addresses of the heap range descriptors based
   // on their indices in the range set array
@@ -165,10 +168,16 @@ ID3D12RootSignature* RootSignatureGenerator::Generate(ID3D12Device* device, bool
       m_parameters[i].DescriptorTable.pDescriptorRanges = m_ranges[m_rangeLocations[i]].data();
     }
   }
+
+
   // Specify the root signature with its set of parameters
   D3D12_ROOT_SIGNATURE_DESC rootDesc = {};
   rootDesc.NumParameters = static_cast<UINT>(m_parameters.size());
   rootDesc.pParameters = m_parameters.data();
+
+  rootDesc.NumStaticSamplers = numStaticSamplers;
+  rootDesc.pStaticSamplers = staticSamplers;
+
   // Set the flags of the signature. By default root signatures are global, for example for vertex
   // and pixel shaders. For raytracing shaders the root signatures are local.
   rootDesc.Flags =
@@ -186,6 +195,8 @@ ID3D12RootSignature* RootSignatureGenerator::Generate(ID3D12Device* device, bool
   ID3D12RootSignature* pRootSig;
   hr = device->CreateRootSignature(0, pSigBlob->GetBufferPointer(), pSigBlob->GetBufferSize(),
                                    IID_PPV_ARGS(&pRootSig));
+
+
   if (FAILED(hr))
   {
     throw std::logic_error("Cannot create root signature");

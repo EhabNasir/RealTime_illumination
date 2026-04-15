@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "DXRSetup.h"
 #include "DXRContext.h"
+#include "TextureLoader.h"
 #include "imgui.h"
 #include "imgui_impl_win32.h"
 #include "imgui_impl_dx12.h"
@@ -273,6 +274,61 @@ void DXRSetup::LoadAssets()
 	planeObject->setPosition(XMFLOAT3(0, -2, 0));
 	planeObject->update(0);
 
+	// Load texture from file
+	TextureLoader tl;
+	int imageBytesPerRow;
+	BYTE* imageData;
+	int imageSize = tl.LoadImageDataFromFile(
+		&imageData,
+		context->m_textureDesc,
+		L"testP.png",
+		imageBytesPerRow);
+
+	if (imageSize <= 0)
+	{
+		assert(0);  // texture failed to load
+	}
+
+	// Create texture on defualt heap
+	ThrowIfFailed(m_device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_NONE,
+		&context->m_textureDesc,
+		D3D12_RESOURCE_STATE_COPY_DEST,
+		nullptr,
+		IID_PPV_ARGS(&context->m_texture)));
+
+	// Create upload heap
+	const UINT64 uploadBufferSize = GetRequiredIntermediateSize(
+		context->m_texture.Get(), 0, 1);
+
+	ThrowIfFailed(m_device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize),
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&context->m_textureUploadHeap)));
+
+	// Copy from upload to default heap
+	D3D12_SUBRESOURCE_DATA textureData = {};
+	textureData.pData = imageData;
+	textureData.RowPitch = imageBytesPerRow;
+	textureData.SlicePitch = textureData.RowPitch * context->m_textureDesc.Height;
+
+	UpdateSubresources(
+		context->m_commandList.Get(),
+		context->m_texture.Get(),
+		context->m_textureUploadHeap.Get(),
+		0, 0, 1, &textureData);
+
+	// Transition texture to shader readable state
+	context->m_commandList->ResourceBarrier(1,
+		&CD3DX12_RESOURCE_BARRIER::Transition(
+			context->m_texture.Get(),
+			D3D12_RESOURCE_STATE_COPY_DEST,
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
+
 	// Create synchronization objects and wait until assets have been uploaded to
 	// the GPU.
 	{
@@ -369,20 +425,39 @@ ComPtr<ID3D12RootSignature> DXRSetup::CreateRayGenSignature() {
 // not require any resources
 //
 ComPtr<ID3D12RootSignature> DXRSetup::CreateHitSignature() {
-	nv_helpers_dx12::RootSignatureGenerator rsc;
-	rsc.AddRootParameter(D3D12_ROOT_PARAMETER_TYPE_SRV, 0 /*t0*/); // vertex data
-	rsc.AddRootParameter(D3D12_ROOT_PARAMETER_TYPE_SRV, 1 /*t1*/); // indices
 
-	// Add colour constant buffer
+	nv_helpers_dx12::RootSignatureGenerator rsc;
+
+	rsc.AddRootParameter(D3D12_ROOT_PARAMETER_TYPE_SRV, 0 /*t0*/); // vertex datas
+	rsc.AddRootParameter(D3D12_ROOT_PARAMETER_TYPE_SRV, 1 /*t1*/); // indices
 	rsc.AddRootParameter(D3D12_ROOT_PARAMETER_TYPE_CBV, 0);  // b0 colour and lighting
 
 	rsc.AddHeapRangesParameter({
 		{ 2 /*t2*/, 1, 0,
 		  D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-		  1 /*slot 1 in heap = TLAS*/ }
+		  1 /*slot 1 in heap = TLAS*/ },
+		  { 3 /*t3*/, 1, 0,
+		  D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
+		  3 /*heap slot 3 = texture*/ }
 		});
 
-	return rsc.Generate(m_device.Get(), true);
+	// Adding sampler
+	D3D12_STATIC_SAMPLER_DESC sampler = {};
+	sampler.Filter = D3D12_FILTER_COMPARISON_MIN_MAG_MIP_POINT;
+	sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+	sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+	sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
+	sampler.MipLODBias = 0;
+	sampler.MaxAnisotropy = 0;
+	sampler.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+	sampler.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
+	sampler.MinLOD = 0.0f;
+	sampler.MaxLOD = D3D12_FLOAT32_MAX;
+	sampler.ShaderRegister = 0;
+	sampler.RegisterSpace = 0;
+	sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+	return rsc.Generate(m_device.Get(), true, 1, &sampler);
 }
 
 //-----------------------------------------------------------------------------
@@ -536,7 +611,11 @@ void DXRSetup::CreateShaderResourceHeap()
 	// Create a SRV/UAV/CBV descriptor heap. We need 2 entries - 1 UAV for the
 	// raytracing output and 1 SRV for the TLAS
 	context->m_srvUavHeap = nv_helpers_dx12::CreateDescriptorHeap(
-		m_device.Get(), 3, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
+		m_device.Get(), 
+		4, 
+		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 
+		true
+	);
 
 	// Get a handle to the heap memory on the CPU side, to be able to write the
 	// descriptors directly
@@ -572,6 +651,17 @@ void DXRSetup::CreateShaderResourceHeap()
 	cbvDesc.BufferLocation = context->m_cameraBuffer->GetGPUVirtualAddress();
 	cbvDesc.SizeInBytes = context->m_cameraBufferSize;
 	m_device->CreateConstantBufferView(&cbvDesc, srvHandle);
+
+	// Increment past the acceleration structure descriptor to slot 3
+	srvHandle.ptr += m_device->GetDescriptorHandleIncrementSize(
+		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDescTex = {};
+	srvDescTex.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDescTex.Format = context->m_textureDesc.Format;
+	srvDescTex.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDescTex.Texture2D.MipLevels = 1;
+	m_device->CreateShaderResourceView(context->m_texture.Get(), &srvDescTex, srvHandle);
 }
 
 //-----------------------------------------------------------------------------

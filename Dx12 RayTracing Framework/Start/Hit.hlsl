@@ -24,6 +24,9 @@ cbuffer ColourParams : register(b0)
     float4 colourDonut;
 }
 
+Texture2D<float4> g_texture : register(t3);
+SamplerState g_sampler : register(s0);
+
 RaytracingAccelerationStructure SceneBVH : register(t2);
 
 float3 HitWorldPosition()
@@ -95,6 +98,20 @@ void ClosestHit(inout HitInfo payload, Attributes attrib)
     STriVertex A = BTriVertex[indices[vertId + 0]];
     STriVertex B = BTriVertex[indices[vertId + 1]];
     STriVertex C = BTriVertex[indices[vertId + 2]];
+    
+    float2 vertexTexCoords[3] =
+    {
+        A.texCoord,
+        B.texCoord,
+        C.texCoord
+    };
+    float2 triangleTexCoord = HitAttribute2(vertexTexCoords, attrib);
+
+    // Sample the texture at mip level 0
+    float4 texColour = g_texture.SampleLevel(g_sampler, triangleTexCoord, 0);
+
+    // Use texture colour instead of constant colour
+    float3 objectColour = texColour.rgb;
 
     float3 vertexNormals[3] = { A.normal.xyz, B.normal.xyz, C.normal.xyz };
     float3 triangleNormal = HitAttribute(vertexNormals, attrib);
@@ -102,11 +119,11 @@ void ClosestHit(inout HitInfo payload, Attributes attrib)
     float3 worldPosition = HitWorldPosition();
 
     // Per object colour
-    float3 objectColour;
-    if (InstanceID() == 0)
-        objectColour = colourDonut.rgb;
-    else
-        objectColour = float3(0, 0, 1);
+    //float3 objectColour;
+    //if (InstanceID() == 0)
+    //    objectColour = colourDonut.rgb;
+    //else
+    //    objectColour = float3(0, 0, 1);
 
     // Lighting
     float3 lightPosition = float3(0, 5, 0);

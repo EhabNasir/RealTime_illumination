@@ -69,5 +69,10 @@ class DXRContext
 	nv_helpers_dx12::ShaderBindingTableGenerator m_sbtHelper;
 	ComPtr<ID3D12Resource> m_sbtStorage;
 
+	// Texture Variables
+	ComPtr<ID3D12Resource> m_textureUploadHeap; // temp upload buffer
+	ComPtr<ID3D12Resource> m_texture; // final texture on GPU
+	D3D12_RESOURCE_DESC    m_textureDesc;
+
 };
 
