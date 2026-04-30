@@ -25,6 +25,11 @@ void DXRRuntime::Render()
 	bool resize = true;
 	ImGui::Begin("DXR Path Tracer", &resize, ImGuiWindowFlags_AlwaysAutoResize);
 	ImGui::Text("ImGUI version: (%s)", IMGUI_VERSION);
+
+	// SLIDER
+	static float speed = 1.0f;
+	ImGui::SliderFloat("Speed", &speed, 0.0f, 10.0f);
+	
 	ImGui::End();
 
 	// Record all the commands we need to render the scene into the command list.
