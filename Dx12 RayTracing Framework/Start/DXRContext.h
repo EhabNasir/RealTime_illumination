@@ -74,5 +74,9 @@ class DXRContext
 	ComPtr<ID3D12Resource> m_texture; // final texture on GPU
 	D3D12_RESOURCE_DESC    m_textureDesc;
 
+	//Imgui settings
+	ComPtr<ID3D12Resource> m_settingsBuffer = nullptr;
+	UINT                   m_settingsBufferSize = 0;
+
 };
 

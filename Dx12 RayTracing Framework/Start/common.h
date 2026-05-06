@@ -18,3 +18,10 @@ struct AccelerationStructureBuffers
 	ComPtr<ID3D12Resource> pResult;       // Where the AS is
 	ComPtr<ID3D12Resource> pInstanceDesc; // Hold the matrices of the instances
 };
+
+struct ImguiSettings
+{
+	int enableShadows;
+	float shadowStrength;
+	float padding[2];
+};

@@ -61,9 +61,13 @@ void DXRSetup::initialise()
 	CreateColourBuffer();
 	UpdateColourBuffer();
 
+	CreateIMGUIBuffer();
+	UpdateIMGUIBuffer(1, 0.3f);
+
 	// Create the shader binding table and indicating which shaders
 	// are invoked for each instance in the  AS
 	CreateShaderBindingTable();
+
 
 	SetupIMGUI();
 }
@@ -431,6 +435,7 @@ ComPtr<ID3D12RootSignature> DXRSetup::CreateHitSignature() {
 	rsc.AddRootParameter(D3D12_ROOT_PARAMETER_TYPE_SRV, 0 /*t0*/); // vertex datas
 	rsc.AddRootParameter(D3D12_ROOT_PARAMETER_TYPE_SRV, 1 /*t1*/); // indices
 	rsc.AddRootParameter(D3D12_ROOT_PARAMETER_TYPE_CBV, 0);  // b0 colour and lighting
+	rsc.AddRootParameter(D3D12_ROOT_PARAMETER_TYPE_CBV, 1);  // b1 settings
 
 	rsc.AddHeapRangesParameter({
 		{ 2 /*t2*/, 1, 0,
@@ -705,6 +710,7 @@ void DXRSetup::CreateShaderBindingTable()
 		{ (void*)(m_app->m_drawableObjects[0]->getVertexBuffer()->GetGPUVirtualAddress()), 
 			(void*)(m_app->m_drawableObjects[0]->getIndexBuffer()->GetGPUVirtualAddress()),
 			(void*)(m_app->GetContext()->m_colourBuffer->GetGPUVirtualAddress()),
+			(void*)(m_app->GetContext()->m_settingsBuffer->GetGPUVirtualAddress()),
 			heapPointer
 		});
 	context->m_sbtHelper.AddHitGroup(L"ShadowHitGroup", {});
@@ -714,6 +720,7 @@ void DXRSetup::CreateShaderBindingTable()
 		{ (void*)(m_app->m_drawableObjects[1]->getVertexBuffer()->GetGPUVirtualAddress()),
 			(void*)(m_app->m_drawableObjects[1]->getIndexBuffer()->GetGPUVirtualAddress()),
 			(void*)(m_app->GetContext()->m_colourBuffer->GetGPUVirtualAddress()),
+			(void*)(m_app->GetContext()->m_settingsBuffer->GetGPUVirtualAddress()),
 			heapPointer
 		});
 	context->m_sbtHelper.AddHitGroup(L"ShadowHitGroup", {});
@@ -723,6 +730,7 @@ void DXRSetup::CreateShaderBindingTable()
 		{ (void*)(m_app->m_drawableObjects[PLANE_INDEX]->getVertexBuffer()->GetGPUVirtualAddress()),
 			(void*)(m_app->m_drawableObjects[PLANE_INDEX]->getIndexBuffer()->GetGPUVirtualAddress()),
 			(void*)(m_app->GetContext()->m_colourBuffer->GetGPUVirtualAddress()),
+			(void*)(m_app->GetContext()->m_settingsBuffer->GetGPUVirtualAddress()),
 			heapPointer
 		});
 	context->m_sbtHelper.AddHitGroup(L"ShadowHitGroup", {});
@@ -954,4 +962,33 @@ void DXRSetup::UpdateColourBuffer()
 	ThrowIfFailed(context->m_colourBuffer->Map(0, nullptr, (void**)&pData));
 	memcpy(pData, &data, sizeof(ColourData));
 	context->m_colourBuffer->Unmap(0, nullptr);
+}
+
+void DXRSetup::CreateIMGUIBuffer()
+{
+	DXRContext* context = m_app->GetContext();
+
+	context->m_settingsBufferSize = 256;
+
+	context->m_settingsBuffer = nv_helpers_dx12::CreateBuffer(
+		m_device.Get(), context->m_settingsBufferSize,
+		D3D12_RESOURCE_FLAG_NONE,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nv_helpers_dx12::kUploadHeapProps);
+}
+
+void DXRSetup::UpdateIMGUIBuffer(int enableShadows, float shadowStrength)
+{
+	DXRContext* context = m_app->GetContext();
+
+	
+
+	ImguiSettings settings = {};
+	settings.enableShadows = enableShadows;
+	settings.shadowStrength = shadowStrength;
+
+	uint8_t* pData;
+	ThrowIfFailed(context->m_settingsBuffer->Map(0, nullptr, (void**)&pData));
+	memcpy(pData, &settings, sizeof(ImguiSettings));
+	context->m_settingsBuffer->Unmap(0, nullptr);
 }

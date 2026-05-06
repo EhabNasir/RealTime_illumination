@@ -29,8 +29,19 @@ void DXRRuntime::Render()
 	// SLIDER
 	static float speed = 1.0f;
 	ImGui::SliderFloat("Speed", &speed, 0.0f, 10.0f);
+
+	static bool enableShadow = true;
+	static float shadowStrength = 0.3f;
+
+	ImGui::Checkbox("Shadows", &enableShadow);
+	ImGui::SliderFloat("Shadow Strength", &shadowStrength, 0.0f, 1.0f);
 	
 	ImGui::End();
+
+	m_app->m_DXSetup->UpdateIMGUIBuffer(
+		enableShadow ? 1 : 0,
+		shadowStrength
+	);
 
 	// Record all the commands we need to render the scene into the command list.
 	PopulateCommandList();

@@ -61,5 +61,9 @@ private:
 	// Colour Setup Functions
 	void CreateColourBuffer();
 	void UpdateColourBuffer();
+
+	// Imgui buffer
+	void CreateIMGUIBuffer();
+	void UpdateIMGUIBuffer(int enableShadows, float shadowStrength);
 };
 

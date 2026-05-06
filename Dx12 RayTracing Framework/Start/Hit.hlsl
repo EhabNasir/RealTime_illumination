@@ -24,6 +24,14 @@ cbuffer ColourParams : register(b0)
     float4 colourDonut;
 }
 
+cbuffer IMGUISettings : register(b1)
+{
+    int enableShadows;
+    float shadowStrength;
+    float padding1;
+    float padding2;
+}
+
 Texture2D<float4> g_texture : register(t3);
 SamplerState g_sampler : register(s0);
 
@@ -137,6 +145,7 @@ void ClosestHit(inout HitInfo payload, Attributes attrib)
 
     // Shadow ray - only on first pass to avoid expensive recursion
     float shadowFactor = 1.0f;
+    
     if (payload.recursionDepth == 0)
     {
         RayDesc shadowRay;
@@ -149,12 +158,12 @@ void ClosestHit(inout HitInfo payload, Attributes attrib)
         shadowPayload.isHit = false;
 
         TraceRay(SceneBVH, RAY_FLAG_NONE, 0xFF,
-            1, 0, 1, // shadow hit offset=1, shadow miss index=1
-            shadowRay, shadowPayload);
+        1, 0, 1, // shadow hit offset=1, shadow miss index=1
+        shadowRay, shadowPayload);
 
         if (shadowPayload.isHit)
-            shadowFactor = 0.2f;
-    }
+            shadowFactor = shadowStrength;
+    }      
 
     // Reflection ray
     Ray reflectionRay;
@@ -166,6 +175,7 @@ void ClosestHit(inout HitInfo payload, Attributes attrib)
     // Combine everything
     float3 finalColour = objectColour * (ambient + diffuse * shadowFactor + specular)
                        + reflectionColour.rgb * 0.3f; // 0.3 = reflection strength
+    
 
     payload.colorAndDistance = float4(finalColour, RayTCurrent());
 }
@@ -191,6 +201,7 @@ void PlaneClosestHit(inout HitInfo payload, Attributes attrib)
 
     // Shadow ray
     float shadowFactor = 1.0f;
+       
     if (payload.recursionDepth == 0)
     {
         RayDesc shadowRay;
@@ -203,11 +214,11 @@ void PlaneClosestHit(inout HitInfo payload, Attributes attrib)
         shadowPayload.isHit = false;
 
         TraceRay(SceneBVH, RAY_FLAG_NONE, 0xFF,
-            1, 0, 1,
-            shadowRay, shadowPayload);
+        1, 0, 1,
+        shadowRay, shadowPayload);
 
         if (shadowPayload.isHit)
-            shadowFactor = 0.2f;
+            shadowFactor = shadowStrength;
     }
 
     // Reflection ray
