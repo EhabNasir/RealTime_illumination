@@ -24,4 +24,5 @@ struct ImguiSettings
 	int enableShadows;
 	float shadowStrength;
 	float padding[2];
+	float reflectionStrength;
 };

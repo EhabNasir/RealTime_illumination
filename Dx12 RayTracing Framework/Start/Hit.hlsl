@@ -30,6 +30,7 @@ cbuffer IMGUISettings : register(b1)
     float shadowStrength;
     float padding1;
     float padding2;
+    float reflectionStrength;
 }
 
 Texture2D<float4> g_texture : register(t3);
@@ -174,7 +175,7 @@ void ClosestHit(inout HitInfo payload, Attributes attrib)
 
     // Combine everything
     float3 finalColour = objectColour * (ambient + diffuse * shadowFactor + specular)
-                       + reflectionColour.rgb * 0.3f; // 0.3 = reflection strength
+                       + reflectionColour.rgb * reflectionStrength;
     
 
     payload.colorAndDistance = float4(finalColour, RayTCurrent());
@@ -230,7 +231,7 @@ void PlaneClosestHit(inout HitInfo payload, Attributes attrib)
 
     // Combine
     float3 finalColour = colourPlane.rgb * (ambient + diffuse * shadowFactor)
-                       + reflectionColour.rgb * 0.5f; // plane is more reflective
+                       + reflectionColour.rgb * reflectionStrength;
 
     payload.colorAndDistance = float4(finalColour, RayTCurrent());
 }

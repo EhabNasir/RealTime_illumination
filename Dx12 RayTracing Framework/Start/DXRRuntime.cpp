@@ -26,21 +26,25 @@ void DXRRuntime::Render()
 	ImGui::Begin("DXR Path Tracer", &resize, ImGuiWindowFlags_AlwaysAutoResize);
 	ImGui::Text("ImGUI version: (%s)", IMGUI_VERSION);
 
-	// SLIDER
+	// Settings UI setup
 	static float speed = 1.0f;
 	ImGui::SliderFloat("Speed", &speed, 0.0f, 10.0f);
 
 	static bool enableShadow = true;
-	static float shadowStrength = 0.3f;
-
 	ImGui::Checkbox("Shadows", &enableShadow);
+
+	static float shadowStrength = 0.3f;
 	ImGui::SliderFloat("Shadow Strength", &shadowStrength, 0.0f, 1.0f);
+
+	static float reflectionStrength = 0.2f;
+	ImGui::SliderFloat("Reflection Strength", &reflectionStrength, 0.0f, 1.0f);
 	
 	ImGui::End();
 
 	m_app->m_DXSetup->UpdateIMGUIBuffer(
 		enableShadow ? 1 : 0,
-		shadowStrength
+		shadowStrength, 
+		reflectionStrength
 	);
 
 	// Record all the commands we need to render the scene into the command list.
@@ -58,7 +62,6 @@ void DXRRuntime::Render()
 
 void DXRRuntime::Update()
 {
-
 	unsigned int i = 0;
 	for (DrawableGameObject* dgo : m_app->m_drawableObjects)
 	{
