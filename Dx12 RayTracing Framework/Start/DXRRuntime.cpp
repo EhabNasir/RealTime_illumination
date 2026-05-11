@@ -38,13 +38,21 @@ void DXRRuntime::Render()
 
 	static float reflectionStrength = 0.2f;
 	ImGui::SliderFloat("Reflection Strength", &reflectionStrength, 0.0f, 1.0f);
+
+	static int   textureIndex = 0;
+	ImGui::Text("Texture:");
+	ImGui::SameLine();
+	if (ImGui::Button("Texture 1")) textureIndex = 0;
+	ImGui::SameLine();
+	if (ImGui::Button("Texture 2")) textureIndex = 1;
 	
 	ImGui::End();
 
 	m_app->m_DXSetup->UpdateIMGUIBuffer(
 		enableShadow ? 1 : 0,
 		shadowStrength, 
-		reflectionStrength
+		reflectionStrength,
+		textureIndex
 	);
 
 	// Record all the commands we need to render the scene into the command list.

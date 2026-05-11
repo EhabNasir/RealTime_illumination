@@ -65,9 +65,10 @@ private:
 	// Imgui buffer
 	void CreateIMGUIBuffer();
 	void UpdateIMGUIBuffer(
-		int enableShadows, 
-		float shadowStrength, 
-		float reflectionStrength
+		int enableShadows,
+		float shadowStrength,
+		float reflectionStrength,
+		int textureIndex
 	);
 };
 

@@ -300,6 +300,10 @@ HRESULT DrawableGameObject::initCubeMesh(ComPtr<ID3D12Device5> device)
 		m_indexBuffer->Unmap(0, nullptr);
 	}
 
+	m_MeshData.VertexBuffer = m_vertexBuffer;
+	m_MeshData.IndexBuffer = m_indexBuffer;
+	m_MeshData.VertexCount = m_vertexCount;
+	m_MeshData.IndexCount = m_indexCount;
 
 	return S_OK;
 }

@@ -28,12 +28,12 @@ cbuffer IMGUISettings : register(b1)
 {
     int enableShadows;
     float shadowStrength;
-    float padding1;
-    float padding2;
     float reflectionStrength;
+    int textureIndex;
 }
 
 Texture2D<float4> g_texture : register(t3);
+Texture2D<float4> g_texture2 : register(t4);
 SamplerState g_sampler : register(s0);
 
 RaytracingAccelerationStructure SceneBVH : register(t2);
@@ -117,7 +117,12 @@ void ClosestHit(inout HitInfo payload, Attributes attrib)
     float2 triangleTexCoord = HitAttribute2(vertexTexCoords, attrib);
 
     // Sample the texture at mip level 0
-    float4 texColour = g_texture.SampleLevel(g_sampler, triangleTexCoord, 0);
+    //float4 texColour = g_texture.SampleLevel(g_sampler, triangleTexCoord, 0);
+    float4 texColour;
+    if (textureIndex == 0)
+        texColour = g_texture.SampleLevel(g_sampler, triangleTexCoord, 0);
+    else
+        texColour = g_texture2.SampleLevel(g_sampler, triangleTexCoord, 0);
 
     // Use texture colour instead of constant colour
     float3 objectColour = texColour.rgb;

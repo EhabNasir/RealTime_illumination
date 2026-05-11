@@ -17,7 +17,7 @@
 #include "DrawableGameObject.h"
 
 #define TRIANGLE_INDEX 2
-#define PLANE_INDEX 2
+#define PLANE_INDEX 3
 
 
 DXRSetup::DXRSetup(DXRApp* app)
@@ -62,7 +62,7 @@ void DXRSetup::initialise()
 	UpdateColourBuffer();
 
 	CreateIMGUIBuffer();
-	UpdateIMGUIBuffer(1, 0.3f, 0.2f);
+	UpdateIMGUIBuffer(1, 0.3f, 0.2f, 0);
 
 	// Create the shader binding table and indicating which shaders
 	// are invoked for each instance in the  AS
@@ -270,6 +270,13 @@ void DXRSetup::LoadAssets()
 
 	objectCopy->update(0);
 
+	//Creating cube object
+	DrawableGameObject* cubeObject = new DrawableGameObject();
+	cubeObject->initCubeMesh(m_device);
+	cubeObject->setPosition(XMFLOAT3(0.0f, 0.0f, 2.0f));
+	cubeObject->update(0);
+	m_app->m_drawableObjects.push_back(cubeObject);
+
 	//Create Plane Object
 	DrawableGameObject* planeObject = new DrawableGameObject();
 	planeObject->initPlaneMesh(m_device);
@@ -278,7 +285,8 @@ void DXRSetup::LoadAssets()
 	planeObject->setPosition(XMFLOAT3(0, -2, 0));
 	planeObject->update(0);
 
-	// Load texture from file
+#pragma region LoadTexture1
+//Load texture 1
 	TextureLoader tl;
 	int imageBytesPerRow;
 	BYTE* imageData;
@@ -290,7 +298,7 @@ void DXRSetup::LoadAssets()
 
 	if (imageSize <= 0)
 	{
-		assert(0);  // texture failed to load
+		assert(0);
 	}
 
 	// Create texture on defualt heap
@@ -332,6 +340,64 @@ void DXRSetup::LoadAssets()
 			context->m_texture.Get(),
 			D3D12_RESOURCE_STATE_COPY_DEST,
 			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
+#pragma endregion
+
+#pragma region LoadTexture2
+//Load texture 2
+	TextureLoader tl2;
+	int imageBytesPerRow2;
+	BYTE* imageData2;
+	int imageSize2 = tl.LoadImageDataFromFile(
+		&imageData2,
+		context->m_textureDesc2,
+		L"Bench.png",
+		imageBytesPerRow2);
+
+	if (imageSize2 <= 0)
+	{
+		assert(0);
+	}
+
+	// Create texture on defualt heap
+	ThrowIfFailed(m_device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+		D3D12_HEAP_FLAG_NONE,
+		&context->m_textureDesc2,
+		D3D12_RESOURCE_STATE_COPY_DEST,
+		nullptr,
+		IID_PPV_ARGS(&context->m_texture2)));
+
+	// Create upload heap
+	const UINT64 uploadBufferSize2 = GetRequiredIntermediateSize(
+		context->m_texture2.Get(), 0, 1);
+
+	ThrowIfFailed(m_device->CreateCommittedResource(
+		&CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+		D3D12_HEAP_FLAG_NONE,
+		&CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize2),
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&context->m_textureUploadHeap2)));
+
+	// Copy from upload to default heap
+	D3D12_SUBRESOURCE_DATA textureData2 = {};
+	textureData2.pData = imageData2;
+	textureData2.RowPitch = imageBytesPerRow2;
+	textureData2.SlicePitch = textureData2.RowPitch * context->m_textureDesc2.Height;
+
+	UpdateSubresources(
+		context->m_commandList.Get(),
+		context->m_texture2.Get(),
+		context->m_textureUploadHeap2.Get(),
+		0, 0, 1, &textureData2);
+
+	// Transition texture to shader readable state
+	context->m_commandList->ResourceBarrier(1,
+		&CD3DX12_RESOURCE_BARRIER::Transition(
+			context->m_texture2.Get(),
+			D3D12_RESOURCE_STATE_COPY_DEST,
+			D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
+#pragma endregion
 
 	// Create synchronization objects and wait until assets have been uploaded to
 	// the GPU.
@@ -362,7 +428,6 @@ void DXRSetup::CreateAccelerationStructures()
 {
 	DXRContext* context = m_app->GetContext();
 
-	// Build the bottom AS from the Triangle vertex buffer
 	AccelerationStructureBuffers bottomLevelBuffers =
 		CreateBottomLevelAS(
 			{{m_app->m_drawableObjects[0]->getVertexBuffer().Get(), 
@@ -370,16 +435,25 @@ void DXRSetup::CreateAccelerationStructures()
 			{{m_app->m_drawableObjects[0]->getIndexBuffer().Get(), 
 			m_app->m_drawableObjects[0]->getIndexCount()}});
 
-	// Build the bottom AS from the Plane vertex buffer
-	AccelerationStructureBuffers bottomLevelPlaneBuffers =
-		CreateBottomLevelAS({ {m_app->m_drawableObjects[2]->getVertexBuffer().Get(), m_app->m_drawableObjects[2]->getVertexCount()} },
-			{ {m_app->m_drawableObjects[2]->getIndexBuffer().Get(), m_app->m_drawableObjects[2]->getIndexCount()} });
+	AccelerationStructureBuffers bottomLevelCubeBuffers =
+		CreateBottomLevelAS(
+			{ {m_app->m_drawableObjects[2]->getVertexBuffer().Get(),
+			   m_app->m_drawableObjects[2]->getVertexCount()} },
+			{ {m_app->m_drawableObjects[2]->getIndexBuffer().Get(),
+			   m_app->m_drawableObjects[2]->getIndexCount()} });
 
-	// Just one instance for now
-	//m_app->m_instances = { {bottomLevelBuffers.pResult, m_app->m_drawableObjects[0]->getTransform()} };
+	AccelerationStructureBuffers bottomLevelPlaneBuffers =
+		CreateBottomLevelAS(
+			{ {m_app->m_drawableObjects[3]->getVertexBuffer().Get(), 
+			m_app->m_drawableObjects[3]->getVertexCount()} },
+			{ {m_app->m_drawableObjects[3]->getIndexBuffer().Get(), 
+			m_app->m_drawableObjects[3]->getIndexCount()} });
+
+	//TLAS instances
 	m_app->m_instances.push_back(std::make_pair(bottomLevelBuffers.pResult, m_app->m_drawableObjects[0]->getTransform()));
 	m_app->m_instances.push_back(std::make_pair(bottomLevelBuffers.pResult, m_app->m_drawableObjects[1]->getTransform()));
-	m_app->m_instances.push_back(std::make_pair(bottomLevelPlaneBuffers.pResult, m_app->m_drawableObjects[2]->getTransform()));
+	m_app->m_instances.push_back(std::make_pair(bottomLevelCubeBuffers.pResult, m_app->m_drawableObjects[2]->getTransform()));
+	m_app->m_instances.push_back(std::make_pair(bottomLevelPlaneBuffers.pResult, m_app->m_drawableObjects[3]->getTransform()));
 
 	CreateTopLevelAS(m_app->m_instances, false);
 
@@ -432,18 +506,15 @@ ComPtr<ID3D12RootSignature> DXRSetup::CreateHitSignature() {
 
 	nv_helpers_dx12::RootSignatureGenerator rsc;
 
-	rsc.AddRootParameter(D3D12_ROOT_PARAMETER_TYPE_SRV, 0 /*t0*/); // vertex datas
-	rsc.AddRootParameter(D3D12_ROOT_PARAMETER_TYPE_SRV, 1 /*t1*/); // indices
+	rsc.AddRootParameter(D3D12_ROOT_PARAMETER_TYPE_SRV, 0 ); // vertex data t0
+	rsc.AddRootParameter(D3D12_ROOT_PARAMETER_TYPE_SRV, 1 ); // indices t1
 	rsc.AddRootParameter(D3D12_ROOT_PARAMETER_TYPE_CBV, 0);  // b0 colour and lighting
 	rsc.AddRootParameter(D3D12_ROOT_PARAMETER_TYPE_CBV, 1);  // b1 settings
 
 	rsc.AddHeapRangesParameter({
-		{ 2 /*t2*/, 1, 0,
-		  D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-		  1 /*slot 1 in heap = TLAS*/ },
-		  { 3 /*t3*/, 1, 0,
-		  D3D12_DESCRIPTOR_RANGE_TYPE_SRV,
-		  3 /*heap slot 3 = texture*/ }
+		{ 2, 1, 0, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1 }, // t2 slot 1 in heap = TLAS
+		{ 3, 1, 0, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 3}, // t3 heap slot 3 = texture
+		{ 4, 1, 0, D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 4} // t4
 		});
 
 	// Adding sampler
@@ -617,7 +688,7 @@ void DXRSetup::CreateShaderResourceHeap()
 	// raytracing output and 1 SRV for the TLAS
 	context->m_srvUavHeap = nv_helpers_dx12::CreateDescriptorHeap(
 		m_device.Get(), 
-		4, 
+		5, 
 		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, 
 		true
 	);
@@ -661,12 +732,24 @@ void DXRSetup::CreateShaderResourceHeap()
 	srvHandle.ptr += m_device->GetDescriptorHandleIncrementSize(
 		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
+	//Texture 1
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDescTex = {};
 	srvDescTex.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 	srvDescTex.Format = context->m_textureDesc.Format;
 	srvDescTex.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDescTex.Texture2D.MipLevels = 1;
 	m_device->CreateShaderResourceView(context->m_texture.Get(), &srvDescTex, srvHandle);
+
+	srvHandle.ptr += m_device->GetDescriptorHandleIncrementSize(
+		D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+	//Textur2
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDescTex2 = {};
+	srvDescTex2.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDescTex2.Format = context->m_textureDesc2.Format;
+	srvDescTex2.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDescTex2.Texture2D.MipLevels = 1;
+	m_device->CreateShaderResourceView(context->m_texture2.Get(), &srvDescTex2, srvHandle);
 }
 
 //-----------------------------------------------------------------------------
@@ -725,7 +808,18 @@ void DXRSetup::CreateShaderBindingTable()
 		});
 	context->m_sbtHelper.AddHitGroup(L"ShadowHitGroup", {});
 
-	// Adding the plane hit shader
+	//Cube hit shader
+	context->m_sbtHelper.AddHitGroup(L"HitGroup",
+		{
+			(void*)(m_app->m_drawableObjects[2]->getVertexBuffer()->GetGPUVirtualAddress()),
+			(void*)(m_app->m_drawableObjects[2]->getIndexBuffer()->GetGPUVirtualAddress()),
+			(void*)(m_app->GetContext()->m_colourBuffer->GetGPUVirtualAddress()),
+			(void*)(m_app->GetContext()->m_settingsBuffer->GetGPUVirtualAddress()),
+			heapPointer
+		});
+	context->m_sbtHelper.AddHitGroup(L"ShadowHitGroup", {});
+
+	//Adding the plane hit shader
 	context->m_sbtHelper.AddHitGroup(L"PlaneHitGroup",
 		{ (void*)(m_app->m_drawableObjects[PLANE_INDEX]->getVertexBuffer()->GetGPUVirtualAddress()),
 			(void*)(m_app->m_drawableObjects[PLANE_INDEX]->getIndexBuffer()->GetGPUVirtualAddress()),
@@ -833,10 +927,12 @@ void DXRSetup::CreateTopLevelAS(
 
 	// Gather all the instances into the builder helper
 	for (size_t i = 0; i < instances.size(); i++) {
-		context->m_topLevelASGenerator.AddInstance(instances[i].first.Get(),
-			instances[i].second, static_cast<UINT>(i),
+		context->m_topLevelASGenerator.AddInstance(
+			instances[i].first.Get(),
+			instances[i].second, 
+			static_cast<UINT>(i),
 			//static_cast<UINT>(i == PLANE_INDEX ? 1 : 0));
-			static_cast<UINT>(i == PLANE_INDEX ? 4 : i * 2));
+			static_cast<UINT>(i == PLANE_INDEX ? 6 : i * 2));
 	}
 
 	if (!_requiresUpdate)
@@ -977,16 +1073,15 @@ void DXRSetup::CreateIMGUIBuffer()
 		nv_helpers_dx12::kUploadHeapProps);
 }
 
-void DXRSetup::UpdateIMGUIBuffer(int enableShadows, float shadowStrength, float reflectionStrength)
+void DXRSetup::UpdateIMGUIBuffer(int enableShadows, float shadowStrength, float reflectionStrength, int textureIndex)
 {
 	DXRContext* context = m_app->GetContext();
-
-	
 
 	ImguiSettings settings = {};
 	settings.enableShadows = enableShadows;
 	settings.shadowStrength = shadowStrength;
 	settings.reflectionStrength = reflectionStrength;
+	settings.textureIndex = textureIndex;
 
 	uint8_t* pData;
 	ThrowIfFailed(context->m_settingsBuffer->Map(0, nullptr, (void**)&pData));
