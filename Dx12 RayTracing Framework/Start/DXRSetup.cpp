@@ -985,7 +985,7 @@ void DXRSetup::CreateCameraBuffer()
 	DXRContext* context = m_app->GetContext();
 
 	XMFLOAT3 eye = XMFLOAT3(0, 2, 3);
-	XMFLOAT3 look = XMFLOAT3(0, 0, -1);
+	XMFLOAT3 look = XMFLOAT3(0, -0.5, -1);
 	XMFLOAT3 up = XMFLOAT3(0, 1, 0);
 
 	context->m_pCamera = new Camera(eye, look, up);
