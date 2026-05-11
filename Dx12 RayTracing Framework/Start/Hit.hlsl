@@ -30,6 +30,9 @@ cbuffer IMGUISettings : register(b1)
     float shadowStrength;
     float reflectionStrength;
     int textureIndex;
+    float colour;
+    float specularValue;
+    float lightPos;
 }
 
 Texture2D<float4> g_texture : register(t3);
@@ -125,7 +128,7 @@ void ClosestHit(inout HitInfo payload, Attributes attrib)
         texColour = g_texture2.SampleLevel(g_sampler, triangleTexCoord, 0);
 
     // Use texture colour instead of constant colour
-    float3 objectColour = texColour.rgb;
+    float3 objectColour = texColour.rgb + float3(colour, 0.2, 0.2);
 
     float3 vertexNormals[3] = { A.normal.xyz, B.normal.xyz, C.normal.xyz };
     float3 triangleNormal = HitAttribute(vertexNormals, attrib);
@@ -140,14 +143,17 @@ void ClosestHit(inout HitInfo payload, Attributes attrib)
     //    objectColour = float3(0, 0, 1);
 
     // Lighting
-    float3 lightPosition = float3(0, 5, 0);
+    float3 lightPosition = float3(0, lightPos, 0);
     float3 lightDir = normalize(lightPosition - worldPosition);
     float diffuse = max(dot(worldNormal, lightDir), 0.0f);
     float ambient = 0.1f;
 
     float3 viewDir = normalize(WorldRayOrigin() - worldPosition);
     float3 reflectDir = reflect(-lightDir, worldNormal);
-    float specular = pow(max(dot(viewDir, reflectDir), 0.0f), 32.0f);
+    
+    float specular;
+    
+    specular = pow(max(dot(viewDir, reflectDir), 0.0f), specularValue);
 
     // Shadow ray - only on first pass to avoid expensive recursion
     float shadowFactor = 1.0f;
@@ -179,11 +185,13 @@ void ClosestHit(inout HitInfo payload, Attributes attrib)
     float4 reflectionColour = TraceRadianceRay(reflectionRay, payload.recursionDepth);
 
     // Combine everything
-    float3 finalColour = objectColour * (ambient + diffuse * shadowFactor + specular)
-                       + reflectionColour.rgb * reflectionStrength;
+    float3 finalColour = objectColour * (ambient + diffuse * shadowFactor) 
+                            + float3(1, 1, 1) * specular * 0.5f 
+                            + reflectionColour.rgb * reflectionStrength;
     
 
     payload.colorAndDistance = float4(finalColour, RayTCurrent());
+    //payload.colorAndDistance = float4(specular, specular, specular, RayTCurrent());
 }
 
 [shader("closesthit")]

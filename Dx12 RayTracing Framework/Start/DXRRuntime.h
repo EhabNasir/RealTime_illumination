@@ -10,6 +10,8 @@ private:
 
 private:
 	void PopulateCommandList();
+	float animationSpeed;
+	int gameObjectIndex;
 
 public:
 	DXRRuntime(DXRApp* app);

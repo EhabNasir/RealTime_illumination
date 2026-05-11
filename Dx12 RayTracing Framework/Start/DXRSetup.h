@@ -68,7 +68,10 @@ private:
 		int enableShadows,
 		float shadowStrength,
 		float reflectionStrength,
-		int textureIndex
+		int textureIndex,
+		float colour,
+		float specularValue,
+		float lightPos
 	);
 };
 

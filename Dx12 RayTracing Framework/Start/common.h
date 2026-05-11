@@ -25,4 +25,7 @@ struct ImguiSettings
 	float shadowStrength;
 	float reflectionStrength;
 	int textureIndex;
+	float colour;
+	float specularValue;
+	float lightPos;
 };

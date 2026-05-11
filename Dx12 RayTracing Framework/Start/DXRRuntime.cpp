@@ -27,8 +27,19 @@ void DXRRuntime::Render()
 	ImGui::Text("ImGUI version: (%s)", IMGUI_VERSION);
 
 	// Settings UI setup
-	static float speed = 1.0f;
-	ImGui::SliderFloat("Speed", &speed, 0.0f, 10.0f);
+	static float speed = 0.1f;
+	ImGui::SliderFloat("Animation Speed", &speed, 0.0f, 0.1f);
+	animationSpeed = speed;
+
+	static int   gameobjectIndex = 0;
+	ImGui::Text("Object:");
+	ImGui::SameLine();
+	if (ImGui::Button("Obj 1")) gameobjectIndex = 0;
+	ImGui::SameLine();
+	if (ImGui::Button("Obj 2")) gameobjectIndex = 1;
+	ImGui::SameLine();
+	if (ImGui::Button("Obj 3")) gameobjectIndex = 2;
+	gameObjectIndex = gameobjectIndex;
 
 	static bool enableShadow = true;
 	ImGui::Checkbox("Shadows", &enableShadow);
@@ -45,6 +56,15 @@ void DXRRuntime::Render()
 	if (ImGui::Button("Texture 1")) textureIndex = 0;
 	ImGui::SameLine();
 	if (ImGui::Button("Texture 2")) textureIndex = 1;
+
+	static float colour = 1.0f;
+	ImGui::SliderFloat("Colour", &colour, 0.0f, 2.0f);
+
+	static float lightPos = 5.0f;
+	ImGui::SliderFloat("Light Position", &lightPos, 0.0f, 10.0f);
+
+	static float enableSpecular = 18.0f;
+	ImGui::SliderFloat("Specular", &enableSpecular, 1.0f, 128.0f);
 	
 	ImGui::End();
 
@@ -52,7 +72,10 @@ void DXRRuntime::Render()
 		enableShadow ? 1 : 0,
 		shadowStrength, 
 		reflectionStrength,
-		textureIndex
+		textureIndex,
+		colour,
+		enableSpecular,
+		lightPos
 	);
 
 	// Record all the commands we need to render the scene into the command list.
@@ -78,7 +101,7 @@ void DXRRuntime::Update()
 		i++;
 	}
 
-	m_app->m_drawableObjects[0]->update(0.02f);
+	m_app->m_drawableObjects[gameObjectIndex]->update(animationSpeed);
 
 	m_app->m_DXSetup->UpdateCameraBuffer();
 

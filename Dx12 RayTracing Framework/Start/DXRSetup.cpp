@@ -62,7 +62,7 @@ void DXRSetup::initialise()
 	UpdateColourBuffer();
 
 	CreateIMGUIBuffer();
-	UpdateIMGUIBuffer(1, 0.3f, 0.2f, 0);
+	UpdateIMGUIBuffer(1, 0.3f, 0.2f, 0, 1, 1, 5);
 
 	// Create the shader binding table and indicating which shaders
 	// are invoked for each instance in the  AS
@@ -1073,7 +1073,9 @@ void DXRSetup::CreateIMGUIBuffer()
 		nv_helpers_dx12::kUploadHeapProps);
 }
 
-void DXRSetup::UpdateIMGUIBuffer(int enableShadows, float shadowStrength, float reflectionStrength, int textureIndex)
+void DXRSetup::UpdateIMGUIBuffer(int enableShadows, float shadowStrength, 
+								float reflectionStrength, int textureIndex, 
+								float colour, float enableSpecular, float lightPos)
 {
 	DXRContext* context = m_app->GetContext();
 
@@ -1082,6 +1084,9 @@ void DXRSetup::UpdateIMGUIBuffer(int enableShadows, float shadowStrength, float 
 	settings.shadowStrength = shadowStrength;
 	settings.reflectionStrength = reflectionStrength;
 	settings.textureIndex = textureIndex;
+	settings.colour = colour;
+	settings.specularValue = enableSpecular;
+	settings.lightPos = lightPos;
 
 	uint8_t* pData;
 	ThrowIfFailed(context->m_settingsBuffer->Map(0, nullptr, (void**)&pData));
